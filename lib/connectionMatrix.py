@@ -14,8 +14,6 @@ def updateWeights(M, inputArray, outputArray, phase):
         for j in xrange(len(outputArray)):
             cross = inputArray[i] * outputArray[j]
             M[j][i] = M[j][i]  + phase * setting.epsilon * cross
-
-
     return M
 
 

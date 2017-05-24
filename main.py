@@ -14,7 +14,7 @@ import numpy as np
 '''Building Framework'''
 # load in MNIST Data
 train_set, valid_set, test_set = lib.inputUnits.loadDataset()
-arrayLabels = train_set[1]
+arrLabels = train_set[1]
 
 #build layers:
 arrInputUnits = train_set[0][0] #lib.inputUnits.buildInputUnits(len(train_set[0][0])) # later just make the inputUnits the nth array of
@@ -40,16 +40,20 @@ print "Settling free phase done"
 #clamped phase
 phase = -1
 arrOutputUnits = np.zeros(10)
-arrOutputUnits[arrayLabels[0]] = 1
+arrOutputUnits[arrLabels[0]] = 1
 
 for i in xrange(setting.settlingIterations):
     #update foward activation
     arrHiddenUnits = lib.helpers.updateActivation(M1,arrInputUnits,arrHiddenUnits)
 
     #update recurrent activation
-
+    arrHiddenUnits = lib.helpers.updateRecurrentActivation(M1, arrOutputUnits, arrHiddenUnits)
     #do this after settling iterations
     M1 = lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase)
-    print "Updated connectionMatrix input to hidden layer"
+
     M2 = lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase)
-    print "Updated connection Matrix hidden to output layer"
+print "settling clamped phase done"
+
+
+
+'''Finished recording '''
