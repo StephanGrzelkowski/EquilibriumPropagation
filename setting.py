@@ -1,3 +1,6 @@
+
+nTrainImages = 10
+nTestImages = 10
 nHiddenUnits = 200  #number of hidden Units per Hidden layer
 settlingIterations = 30 #number of settling operations during the training phase
 settlingIterationsTest = 30 #number of settling operations during the test phase
