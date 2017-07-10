@@ -1,4 +1,5 @@
 
+debugWeights = 1
 nTrainImages = 10
 nTestImages = 10
 nHiddenUnits = 200  #number of hidden Units per Hidden layer

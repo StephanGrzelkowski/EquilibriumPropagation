@@ -11,16 +11,18 @@ def linearFunction(net,m):
 def updateActivation(M,inputArray, updatedArray): # same  as  update forward activation but might change later on
     #net = np.zeros(len(updatedArray))
 
-
+    activityChangeTotal = 0
     for i in xrange(len(updatedArray)):
 
-        net =  np.dot( inputArray.T,  M[i] )  # take transpose of input units
+        net =  np.dot( inputArray.T,  M[:,i] )  # take transpose of input units
 
 
         '''Using sigmoid function '''
-        updatedArray[i] = activationFunction(net, 1)
+        activityChange = setting.lamb * (-updatedArray[i] + activationFunction(net, 1))
+        updatedArray[i] = updatedArray[i] + activityChange
 
-        #linear
+        if setting.debugWeights == 1:
+            activityChangeTotal = activityChangeTotal + np.square(activityChange)
 
         '''Using function from article:'''
         """if net[i] >= 0:
@@ -35,25 +37,44 @@ def updateActivation(M,inputArray, updatedArray): # same  as  update forward act
             updatedArray[i] = setting.aMin
         """
 
-
+    if setting.debugWeights == 1:
+        print "Total change of Activity in forward update: ", activityChangeTotal
     return updatedArray
 
 
 def updateActivationLinear(M, inputArray, updatedArray):
+    activityChangeTotal = 0
     for i in xrange(len(updatedArray)):
-        net =  np.dot( inputArray.T,  M[i] )  # take transpose of input units
+        net =  np.dot(inputArray.T,  M[:,i])  # take transpose of input units
 
-        updatedArray[i] = linearFunction(net,1)
+        activityChange = setting.lamb * (-updatedArray[i] + activationFunction(net, 1))
+        updatedArray[i] = updatedArray[i] + activityChange
+
+        if setting.debugWeights == 1:
+            activityChangeTotal = activityChangeTotal + np.square(activityChange)
+
+
+    if setting.debugWeights == 1:
+        print "Total squared change of Activity in forward linear activation: ", activityChangeTotal
     return updatedArray
+
 def updateRecurrentActivation(M,inputArray, updatedArray):
+
+
+    activityChangeTotal = 0
 
     for i in xrange(len(updatedArray)):
         net = 0
         for j in xrange(len(inputArray)): # much faster when taking transpose
-            net =  net + M[j][i] * inputArray[j] # implement this as the transpose of M in the original function
+            net =  net + M[i,j] * inputArray[j] # implement this as the transpose of M in the original function
 
         '''Using sigmoid  function '''
-        updatedArray[i] = activationFunction(net, 1)
+        activityChange = setting.lamb * (-updatedArray[i] + activationFunction(net, 1))
+
+        updatedArray[i] = updatedArray[i] + activityChange
+
+        if setting.debugWeights == 1:
+            activityChangeTotal = activityChangeTotal + np.square(activityChange)
 
         '''Using function from article:'''
         '''if net >= 0:
@@ -67,6 +88,8 @@ def updateRecurrentActivation(M,inputArray, updatedArray):
         elif updatedArray[i] < setting.aMin:
             updatedArray[i] = setting.aMin
         '''
+    if setting.debugWeights == 1:
+        print "Total change of Activity in recurrent update: ", activityChangeTotal, "\n"
     return updatedArray
 
 def collectCrossProducts(firstArray, secondArray):
@@ -76,3 +99,8 @@ def collectCrossProducts(firstArray, secondArray):
             crossProducts[i][j] = firstArray[i] * secondArray[j]
 
 
+def calcError(arrOutputUnits, label):
+    target = np.zeros(len(arrOutputUnits)) - 1
+    target[label] = 1
+    error = np.sum(np.square(arrOutputUnits - target))
+    return error

@@ -8,11 +8,6 @@ import numpy as np
 
 debug = 0
 
-'''Settings: '''
-#number of hidden Unit
-
-
-
 '''Building Framework'''
 # load in MNIST Data
 train_set, valid_set, test_set = lib.inputUnits.loadDataset()
@@ -38,8 +33,8 @@ for n in xrange(setting.nTrainImages): #10 images to train initially
         #update forward activation
         arrHiddenUnits = lib.helpers.updateActivation(M1,arrInputUnits,arrHiddenUnits)
         arrOutputUnits = lib.helpers.updateActivationLinear(M2,arrHiddenUnits, arrOutputUnits)
-
-
+        error = lib.helpers.calcError(arrOutputUnits, arrLabels[arrTrainImages[n]])
+        print "Squared error: ", error
         """" DEBUGGING """
         if debug == 1:
             print "\nIteration of forward activity #", i
@@ -59,10 +54,15 @@ for n in xrange(setting.nTrainImages): #10 images to train initially
 
     print "\nSettling free phase done\n"
 
-    #update weights after each phase
+    print "\nCaluculating weight change of clamped phase."
+
+    #reset weight change
+
+
     phase = -1
-    M1 = lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase)
-    M2 = lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase)
+
+    U1 = lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase)
+    U2 = lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase)
 
 
     """DEBUGGING"""
@@ -98,10 +98,21 @@ for n in xrange(setting.nTrainImages): #10 images to train initially
             print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
 
     print "settling clamped phase done"
+
     #update weights after each phase
+
     phase = 1
-    M1 = lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase)
-    M2 = lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase)
+    #U1 =  lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase) - U1
+    #U2 =  lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase) - U2
+
+    print "\nUpdating the weights"
+    U1 = U1 + lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase)
+    U2 = U2 + lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase)
+
+    M1 = M1 + U1
+    M2 = M2 + U2
+
+
     if debug == 1:
         print "\nWeight update after clamped phase"
         print "Updating connection Matrix 1. Average weight:", np.mean(M1)
@@ -110,8 +121,6 @@ for n in xrange(setting.nTrainImages): #10 images to train initially
         print "Standard dev: ", np.std(M2)
 
 print "\nTraining phase done!\n"
-
-
 
 
 '''Test the training scheme'''
@@ -127,14 +136,28 @@ for n in xrange(setting.nTestImages): # test for 10 images
         # update forward activation
         arrHiddenUnits = lib.helpers.updateActivation(M1, arrInputUnits, arrHiddenUnits)
         arrOutputUnits = lib.helpers.updateActivationLinear(M2, arrHiddenUnits, arrOutputUnits)
+        error = lib.helpers.calcError(arrOutputUnits, arrLabels[arrTrainImages[n]])
+        print "Squared error: ", error
+
+        if debug == 1:
+            print "\nIteration of forward activity #", i
+            print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
+            print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
+            print "Average Activity of the output Units: ", np.mean(arrOutputUnits)
+            print "Standard deviation of the Output Units: ", np.std(arrOutputUnits)
+
         # update recurrent activation
         arrHiddenUnits = lib.helpers.updateRecurrentActivation(M2, arrOutputUnits, arrHiddenUnits)
 
+        if debug == 1:
+            print "\nIteration of recurrent activity #", i
+            print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
+            print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
 
     print "\nResponse to Image", n, arrOutputUnits
     if np.argmax(arrOutputUnits) == test_set[1][arrTestImages[n]]:
         nCorrect += 1.0
-    print "Max acitivty unit: ", np.argmax(arrOutputUnits), ". Correct label: ", test_set[1][arrTestImages[n]]
+    print "Max acitivity unit: ", np.argmax(arrOutputUnits), ". Correct label: ", test_set[1][arrTestImages[n]], "; \n"
 
 accuracy = (nCorrect / (setting.nTestImages)) * 100
 

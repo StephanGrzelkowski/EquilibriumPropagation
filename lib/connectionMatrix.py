@@ -2,20 +2,22 @@ import numpy as np
 import helpers
 import setting
 def resetConnections(arrInputUnits, arrHiddenUnits, arrOutputUnits):
-    W1 = setting.varWeights * np.random.randn(len(arrHiddenUnits),len(arrInputUnits))
-    W2 = setting.varWeights * np.random.randn(len(arrOutputUnits), len(arrHiddenUnits))
+    W1 = np.matrix(setting.varWeights * np.random.randn(len(arrInputUnits),len(arrHiddenUnits)))
+    W2 = np.matrix(setting.varWeights * np.random.randn(len(arrHiddenUnits),len(arrOutputUnits)))
 
     return W1, W2
 
 
 def updateWeights(M, inputArray, outputArray, phase):
-
+    U = np.matrix(np.zeros([len(inputArray), len(outputArray)]))
+    #Wdot = np.dot(inputArray, outputArray)
     for i in xrange(len(inputArray)):
         for j in xrange(len(outputArray)):
             cross = inputArray[i] * outputArray[j]
             if cross != 0:
-                M[j][i] = M[j][i]  + (phase * setting.epsilon * cross)
+                U[i,j] = (phase * setting.epsilon * cross)
+    #Wdot = Wdot * phase * setting.epsilon
 
-    return M
+    return U
 
 
