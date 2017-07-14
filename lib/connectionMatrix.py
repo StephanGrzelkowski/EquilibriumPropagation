@@ -10,13 +10,12 @@ def resetConnections(arrInputUnits, arrHiddenUnits, arrOutputUnits):
 
 def updateWeights(M, inputArray, outputArray, phase):
     U = np.matrix(np.zeros([len(inputArray), len(outputArray)]))
-    #Wdot = np.dot(inputArray, outputArray)
+
     for i in xrange(len(inputArray)):
         for j in xrange(len(outputArray)):
             cross = inputArray[i] * outputArray[j]
             if cross != 0:
                 U[i,j] = (phase * setting.epsilon * cross)
-    #Wdot = Wdot * phase * setting.epsilon
 
     return U
 

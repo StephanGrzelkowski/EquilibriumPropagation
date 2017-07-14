@@ -13,130 +13,135 @@ debug = 0
 train_set, valid_set, test_set = lib.inputUnits.loadDataset()
 arrLabels = train_set[1]
 arrTrainImages = np.random.randint(0, len(train_set[0])-1, setting.nTrainImages)
-#build layers:
 
 #build connection matrices
-
+M1 = np.matrix(setting.varWeights * np.random.randn(len(train_set[0][0]),setting.nHiddenUnits))
+M2 = np.matrix(setting.varWeights * np.random.randn(setting.nHiddenUnits,10))
 '''Training phase'''
-for n in xrange(setting.nTrainImages): #10 images to train initially
-    print "\nTRAINING ON IMAGE: ", n
+for k in xrange(setting.batchIterations):
 
-    """FREE PHASE"""
-    arrInputUnits = train_set[0][arrTrainImages[n]] #lib.inputUnits.buildInputUnits(len(train_set[0][0])) # later just make the inputUnits the nth array of
-    arrHiddenUnits = lib.hiddenLayer.buildHiddenLayer(setting.nHiddenUnits)
-    arrOutputUnits = lib.outputLayer.buildOutputLayer()
-    if n == 0:
-        M1, M2 = lib.connectionMatrix.resetConnections(arrInputUnits, arrHiddenUnits, arrOutputUnits)
+    print "BATCH NUMBER: #",k
+    for n in xrange(setting.nTrainImages): #10 images to train initially
+        print "\nTRAINING ON IMAGE:", n,". Label: ", arrLabels[arrTrainImages[n]]
 
+        """FREE PHASE"""
+        arrInputUnits = train_set[0][arrTrainImages[n]] #lib.inputUnits.buildInputUnits(len(train_set[0][0])) # later just make the inputUnits the nth array of
+        arrHiddenUnits = lib.hiddenLayer.buildHiddenLayer(setting.nHiddenUnits)
+        arrOutputUnits = lib.outputLayer.buildOutputLayer()
 
-    for i in xrange(setting.settlingIterations):
-        #update forward activation
-        arrHiddenUnits = lib.helpers.updateActivation(M1,arrInputUnits,arrHiddenUnits)
-        arrOutputUnits = lib.helpers.updateActivationLinear(M2,arrHiddenUnits, arrOutputUnits)
         error = lib.helpers.calcError(arrOutputUnits, arrLabels[arrTrainImages[n]])
-        print "Squared error: ", error
-        """" DEBUGGING """
+        print "Squared error:", error
+
+        for i in xrange(setting.settlingIterations):
+            #update forward activation
+            arrHiddenUnits = lib.helpers.updateActivation(M1,arrInputUnits,arrHiddenUnits)
+            arrOutputUnits = lib.helpers.updateActivationLinear(M2,arrHiddenUnits, arrOutputUnits)
+            error = lib.helpers.calcError(arrOutputUnits, arrLabels[arrTrainImages[n]])
+            print "Squared error: ", error
+            """" DEBUGGING """
+            if debug == 1:
+                print "\nIteration of forward activity #", i
+                print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
+                print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
+                print "Average Activity of the output Units: ", np.mean(arrOutputUnits)
+                print "Standard deviation of the Output Units: ", np.std(arrOutputUnits)
+            #update recurrent activation
+            arrHiddenUnits = lib.helpers.updateRecurrentActivation(M2, arrOutputUnits, arrHiddenUnits)
+            """ DEBUGGING """
+            if debug == 1:
+                print "\nIteration of recurrent activity #", i
+                print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
+                print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
+
+        print "\nSettling free phase done\n"
+        print arrOutputUnits
+        #print "\nCaluculating weight change of free phase."
+
+        #reset weight change
+        phase = -1
+
+        U1 = lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase)
+        U2 = lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase)
+
+        """DEBUGGING"""
         if debug == 1:
-            print "\nIteration of forward activity #", i
-            print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
-            print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
-            print "Average Activity of the output Units: ", np.mean(arrOutputUnits)
-            print "Standard deviation of the Output Units: ", np.std(arrOutputUnits)
-        #update recurrent activation
-        arrHiddenUnits = lib.helpers.updateRecurrentActivation(M2, arrOutputUnits, arrHiddenUnits)
-        """ DEBUGGING """
+            print "\nWeight update after clamped phase"
+            print "Updating connection Matrix 1. Average Activity:", np.mean(M1)
+            print "Average Standard dev: ", np.std(M1)
+            print "Updating connection Matrix 2. Average Activity:", np.mean(M2)
+            print "Average Standard dev: ", np.std(M2)
+
+        """CLAMPED PHASE"""
+
+        arrOutputUnits = np.zeros(10) - 1
+        arrOutputUnits[arrLabels[arrTrainImages[n]]] = 1
+
+        for i in xrange(setting.settlingIterations):
+            #update foward activation
+            arrHiddenUnits = lib.helpers.updateActivation(M1,arrInputUnits,arrHiddenUnits)
+            if debug == 1:
+                print "\nIteration of forward activity #", i
+                print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
+                print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
+
+            #update recurrent activation
+            arrHiddenUnits = lib.helpers.updateRecurrentActivation(M2, arrOutputUnits, arrHiddenUnits)
+            if debug == 1:
+                print "\nIteration of recurrent activity #", i
+                print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
+                print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
+
+        print "settling clamped phase done"
+
+        #update weights after each phase
+
+        phase = 1
+        #U1 =  lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase) - U1
+        #U2 =  lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase) - U2
+
+        print "\nUpdating the weights"
+        U1 = U1 + lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase)
+        U2 = U2 + lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase)
+
+
+        print "Squared weight update M1: ", np.sum(np.square(U1))
+        print "Squared weight update M2: ", np.sum(np.square(U2))
+        M1 = M1 + U1
+        M2 = M2 + U2
+
+
         if debug == 1:
-            print "\nIteration of recurrent activity #", i
-            print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
-            print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
-
-
-
-    print "\nSettling free phase done\n"
-
-    print "\nCaluculating weight change of clamped phase."
-
-    #reset weight change
-
-
-    phase = -1
-
-    U1 = lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase)
-    U2 = lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase)
-
-
-    """DEBUGGING"""
-    if debug == 1:
-        print "\nWeight update after clamped phase"
-        print "Updating connection Matrix 1. Average Activity:", np.mean(M1)
-        print "Average Standard dev: ", np.std(M1)
-        print "Updating connection Matrix 2. Average Activity:", np.mean(M2)
-        print "Average Standard dev: ", np.std(M2)
-
-
-
-
-
-    """CLAMPED PHASE"""
-
-    arrOutputUnits = np.zeros(10) - 1
-    arrOutputUnits[arrLabels[arrTrainImages[n]]] = 1
-
-    for i in xrange(setting.settlingIterations):
-        #update foward activation
-        arrHiddenUnits = lib.helpers.updateActivation(M1,arrInputUnits,arrHiddenUnits)
-        if debug == 1:
-            print "\nIteration of forward activity #", i
-            print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
-            print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
-
-        #update recurrent activation
-        arrHiddenUnits = lib.helpers.updateRecurrentActivation(M2, arrOutputUnits, arrHiddenUnits)
-        if debug == 1:
-            print "\nIteration of recurrent activity #", i
-            print "Average activity of the Hidden Units: ", np.mean(arrHiddenUnits)
-            print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
-
-    print "settling clamped phase done"
-
-    #update weights after each phase
-
-    phase = 1
-    #U1 =  lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase) - U1
-    #U2 =  lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase) - U2
-
-    print "\nUpdating the weights"
-    U1 = U1 + lib.connectionMatrix.updateWeights(M1, arrInputUnits, arrHiddenUnits, phase)
-    U2 = U2 + lib.connectionMatrix.updateWeights(M2, arrHiddenUnits, arrOutputUnits, phase)
-
-    M1 = M1 + U1
-    M2 = M2 + U2
-
-
-    if debug == 1:
-        print "\nWeight update after clamped phase"
-        print "Updating connection Matrix 1. Average weight:", np.mean(M1)
-        print "Standard deviation: ", np.std(M1)
-        print "Updating connection Matrix 2. Average weight:", np.mean(M2)
-        print "Standard dev: ", np.std(M2)
+            print "\nWeight update after clamped phase"
+            print "Updating connection Matrix 1. Average weight:", np.mean(M1)
+            print "Standard deviation: ", np.std(M1)
+            print "Updating connection Matrix 2. Average weight:", np.mean(M2)
+            print "Standard dev: ", np.std(M2)
 
 print "\nTraining phase done!\n"
 
-
 '''Test the training scheme'''
 nCorrect = 0.0
-nTestImages = 10
 arrTestImages = np.random.randint(0, len(test_set[0])-1, setting.nTestImages)
+if setting.debugEql == 1:
+    arrTestImages = arrTrainImages
 for n in xrange(setting.nTestImages): # test for 10 images
     # get a test image
     arrHiddenUnits = lib.hiddenLayer.buildHiddenLayer(setting.nHiddenUnits) #do these get set randomly again or do the reamin the same
     arrOutputUnits = lib.outputLayer.buildOutputLayer()
-    arrInputUnits = test_set[0][arrTestImages[n]]
+    if setting.debugEql == 1:
+        arrInputUnits = train_set[0][arrTestImages[n]]
+    else:
+        arrInputUnits = test_set[0][arrTestImages[n]]
+
     for i in xrange(setting.settlingIterationsTest):
         # update forward activation
         arrHiddenUnits = lib.helpers.updateActivation(M1, arrInputUnits, arrHiddenUnits)
         arrOutputUnits = lib.helpers.updateActivationLinear(M2, arrHiddenUnits, arrOutputUnits)
-        error = lib.helpers.calcError(arrOutputUnits, arrLabels[arrTrainImages[n]])
+
+        if setting.debugEql:
+            error = lib.helpers.calcError(arrOutputUnits, arrLabels[arrTestImages[n]])
+        else:
+            error = lib.helpers.calcError(arrOutputUnits, test_set[1][arrTestImages[n]])
         print "Squared error: ", error
 
         if debug == 1:
@@ -155,9 +160,13 @@ for n in xrange(setting.nTestImages): # test for 10 images
             print "Standard deviation of the Hidden Units: ", np.std(arrHiddenUnits)
 
     print "\nResponse to Image", n, arrOutputUnits
-    if np.argmax(arrOutputUnits) == test_set[1][arrTestImages[n]]:
+    if setting.debugEql == 1:
+        if np.argmax(arrOutputUnits) == arrLabels[arrTestImages[n]]:
+            nCorrect += 1.0
+        print "Max acitivity unit: ", np.argmax(arrOutputUnits), ". Correct label: ", arrLabels[arrTestImages[n]], "; \n"
+    elif np.argmax(arrOutputUnits) == test_set[1][arrTestImages[n]]:
         nCorrect += 1.0
-    print "Max acitivity unit: ", np.argmax(arrOutputUnits), ". Correct label: ", test_set[1][arrTestImages[n]], "; \n"
+    #print "Max acitivity unit: ", np.argmax(arrOutputUnits), ". Correct label: ", test_set[1][arrTestImages[n]], "; \n"
 
 accuracy = (nCorrect / (setting.nTestImages)) * 100
 

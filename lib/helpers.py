@@ -16,7 +16,6 @@ def updateActivation(M,inputArray, updatedArray): # same  as  update forward act
 
         net =  np.dot( inputArray.T,  M[:,i] )  # take transpose of input units
 
-
         '''Using sigmoid function '''
         activityChange = setting.lamb * (-updatedArray[i] + activationFunction(net, 1))
         updatedArray[i] = updatedArray[i] + activityChange
@@ -47,7 +46,7 @@ def updateActivationLinear(M, inputArray, updatedArray):
     for i in xrange(len(updatedArray)):
         net =  np.dot(inputArray.T,  M[:,i])  # take transpose of input units
 
-        activityChange = setting.lamb * (-updatedArray[i] + activationFunction(net, 1))
+        activityChange = setting.lamb * (-updatedArray[i] + linearFunction(net, 1))
         updatedArray[i] = updatedArray[i] + activityChange
 
         if setting.debugWeights == 1:
@@ -58,15 +57,13 @@ def updateActivationLinear(M, inputArray, updatedArray):
         print "Total squared change of Activity in forward linear activation: ", activityChangeTotal
     return updatedArray
 
-def updateRecurrentActivation(M,inputArray, updatedArray):
-
+def updateRecurrentActivation(M, inputArray, updatedArray):
 
     activityChangeTotal = 0
 
     for i in xrange(len(updatedArray)):
-        net = 0
-        for j in xrange(len(inputArray)): # much faster when taking transpose
-            net =  net + M[i,j] * inputArray[j] # implement this as the transpose of M in the original function
+
+        net = np.dot(inputArray.T, M[i,:].T)
 
         '''Using sigmoid  function '''
         activityChange = setting.lamb * (-updatedArray[i] + activationFunction(net, 1))

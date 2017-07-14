@@ -14,7 +14,3 @@ def loadDataset():
 
     return train_set, valid_set, test_set
 
-
-def buildInputUnits(numberUnits):
-    arrInputUnits = np.ones(numberUnits)
-    return arrInputUnits
