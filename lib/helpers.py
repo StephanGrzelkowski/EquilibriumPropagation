@@ -1,103 +1,36 @@
 import numpy as np
 import setting
 
-def activationFunction(netinput, T):
-    y = 1 / (1 + np.exp(-netinput/T))
+def activationFunction(net, T):
+    y = 1 / (1 + np.exp(-net/T))
     return y
 
-def linearFunction(net,m):
-    output = m * net
-    return output
-def updateActivation(M,inputArray, updatedArray): # same  as  update forward activation but might change later on
-    #net = np.zeros(len(updatedArray))
 
-    activityChangeTotal = 0
-    for i in xrange(len(updatedArray)):
+def updateActivation(M1, M2, inputUnits, hiddenUnits, outputUnits): # same  as  update forward activation but might change later on
 
-        net =  np.dot( inputArray.T,  M[:,i] )  # take transpose of input units
-
-        '''Using sigmoid function '''
-        activityChange = setting.lamb * (-updatedArray[i] + activationFunction(net, 1))
-        updatedArray[i] = updatedArray[i] + activityChange
-
-        if setting.debugWeights == 1:
-            activityChangeTotal = activityChangeTotal + np.square(activityChange)
-
-        '''Using function from article:'''
-        """if net[i] >= 0:
-            updatedArray[i] = updatedArray[i] + setting.lamb * ((setting.aMax -updatedArray[i]) * net[i] - setting.decay * (updatedArray[i]-setting.rest))
-        else:
-            updatedArray[i] = updatedArray[i] + setting.lamb * ((updatedArray[i] - setting.aMin) * net[i] - setting.decay * (updatedArray[i] - setting.rest))
-
-        #clamp units to max or min
-        if updatedArray[i] > setting.aMax:
-            updatedArray[i] = setting.aMax
-        elif updatedArray[i] < setting.aMin:
-            updatedArray[i] = setting.aMin
-        """
-
-    if setting.debugWeights == 1:
-        print "Total change of Activity in forward update: ", activityChangeTotal
-    return updatedArray
+    net1 = np.dot(inputUnits, M1)
+    net2 = np.dot(M2, outputUnits)
+    updatedArray = hiddenUnits + (setting.lamb * (-hiddenUnits + activationFunction((net1 + net2), 1)))
+    maxDelta = np.max(np.square(updatedArray - hiddenUnits))
+    return updatedArray, maxDelta
 
 
-def updateActivationLinear(M, inputArray, updatedArray):
-    activityChangeTotal = 0
-    for i in xrange(len(updatedArray)):
-        net =  np.dot(inputArray.T,  M[:,i])  # take transpose of input units
-
-        activityChange = setting.lamb * (-updatedArray[i] + linearFunction(net, 1))
-        updatedArray[i] = updatedArray[i] + activityChange
-
-        if setting.debugWeights == 1:
-            activityChangeTotal = activityChangeTotal + np.square(activityChange)
+def updateActivationLinear(M, hiddenUnits, outputUnits):
+    net = np.dot(hiddenUnits, M)
+    updatedArray = outputUnits + (setting.lamb * (-outputUnits + net))
+    maxDelta =  np.max(np.square(updatedArray - outputUnits))
+    return updatedArray, maxDelta
 
 
-    if setting.debugWeights == 1:
-        print "Total squared change of Activity in forward linear activation: ", activityChangeTotal
-    return updatedArray
-
-def updateRecurrentActivation(M, inputArray, updatedArray):
-
-    activityChangeTotal = 0
-
-    for i in xrange(len(updatedArray)):
-
-        net = np.dot(inputArray.T, M[i,:].T)
-
-        '''Using sigmoid  function '''
-        activityChange = setting.lamb * (-updatedArray[i] + activationFunction(net, 1))
-
-        updatedArray[i] = updatedArray[i] + activityChange
-
-        if setting.debugWeights == 1:
-            activityChangeTotal = activityChangeTotal + np.square(activityChange)
-
-        '''Using function from article:'''
-        '''if net >= 0:
-            updatedArray[i] = updatedArray[i] + setting.lamb * ((setting.aMax - updatedArray[i]) * net - setting.decay * (updatedArray[i] - setting.rest))
-        else:
-            updatedArray[i] = updatedArray[i] + setting.lamb * ((updatedArray[i] - setting.aMin) * net - setting.decay * (updatedArray[i] - setting.rest))
-
-        # clamp units to max or min
-        if updatedArray[i] > setting.aMax:
-            updatedArray[i] = setting.aMax
-        elif updatedArray[i] < setting.aMin:
-            updatedArray[i] = setting.aMin
-        '''
-    if setting.debugWeights == 1:
-        print "Total change of Activity in recurrent update: ", activityChangeTotal, "\n"
-    return updatedArray
-
-def collectCrossProducts(firstArray, secondArray):
-    crossProducts = np.zeros(len(firstArray),len(secondArray))
-    for i in xrange(len(firstArray)):
-        for j in xrange(len(secondArray)):
-            crossProducts[i][j] = firstArray[i] * secondArray[j]
-
-
-def calcError(arrOutputUnits, label):
+def calcErrorDiff(arrOutputUnits, label):
     target = np.zeros(len(arrOutputUnits)) - 1
     target[label] = 1
-    error = np.sum(np.square(arrOutputUnits - target))
-    return error
+    negTarget = np.ones(len(arrOutputUnits))
+    negTarget[label] = 0
+    posTarget = np.zeros(len(arrOutputUnits))
+    posTarget[label] = 1
+    error = np.square(arrOutputUnits - target)
+    errorNeg = (arrOutputUnits >= -1) * negTarget * error
+    errorPos = (arrOutputUnits <= 1) * posTarget * error
+    errorTot = np.sum(errorNeg + errorPos)
+    return errorTot
