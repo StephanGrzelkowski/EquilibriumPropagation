@@ -10,7 +10,8 @@ debug = 0
 # load in MNIST Data
 train_set, valid_set, test_set = lib.inputUnits.loadDataset()
 arrLabels = train_set[1]
-arrTrainImages = np.random.randint(0, len(train_set[0])-1, setting.nTrainImages)
+arrTrainImages = np.random.permutation(len(train_set[0])-1)
+arrTrainImages = arrTrainImages[0 : setting.nTrainImages]
 
 #build connection matrices
 M1 = setting.varWeights * np.random.randn(len(train_set[0][0]),setting.nHiddenUnits)
@@ -51,6 +52,7 @@ for k in xrange(setting.batchIterations):
         for i in xrange(setting.settlingIterations):
             #update activation
             arrHiddenUnits, maxDelta = lib.helpers.updateActivation(M1, M2, arrInputUnits, arrHiddenUnits, arrOutputUnits)
+
         print "Maximal update for Unit:", maxDelta
         print "settling clamped phase done"
 
@@ -69,7 +71,8 @@ print "\nTraining phase done!\n"
 
 #Test Phase
 nCorrect = 0.0
-arrTestImages = np.random.randint(0, len(test_set[0])-1, setting.nTestImages)
+arrTestImages = np.random.permutation(len(test_set[0])-1)
+arrTestImages = arrTestImages[0:setting.nTestImages]
 if setting.debugEql == 1:
     arrTestImages = arrTrainImages
 for n in xrange(setting.nTestImages): # test for 10 images
