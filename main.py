@@ -21,7 +21,7 @@ M2 = setting.varWeights * np.random.randn(setting.nHiddenUnits,10)
 for k in xrange(setting.batchIterations):
 
     print "BATCH NUMBER: #",k
-    for n in xrange(setting.nTrainImages): #10 images to train initially
+    for n in xrange(setting.nTrainImages):
         print "\nTRAINING ON IMAGE:", n,". Label: ", arrLabels[arrTrainImages[n]]
 
 #Free phase
@@ -31,13 +31,18 @@ for k in xrange(setting.batchIterations):
         arrOutputUnits = np.zeros(10) - setting.rest
 
         #update activation of layers
-        for i in xrange(setting.settlingIterations):
-            arrHiddenUnits, maxDelta = lib.helpers.updateActivation(M1, M2, arrInputUnits, arrHiddenUnits, arrOutputUnits)
-            arrOutputUnits, maxDelta = lib.helpers.updateActivationLinear(M2, arrHiddenUnits, arrOutputUnits)
+        #for i in xrange(setting.settlingIterations):
+        maxDeltaHid = 1
+        maxDeltaOut = 1
+        steps = 0
+        while (maxDeltaHid > setting.delta) & (maxDeltaOut > setting.delta):
+            steps += 1
+            arrHiddenUnits, maxDeltaHid = lib.helpers.updateActivation(M1, M2, arrInputUnits, arrHiddenUnits, arrOutputUnits)
+            arrOutputUnits, maxDeltaOut = lib.helpers.updateActivationLinear(M2, arrHiddenUnits, arrOutputUnits)
 
         errorDiff = lib.helpers.calcErrorDiff(arrOutputUnits, arrLabels[arrTrainImages[n]])
         print "Squared Error off target: ", errorDiff
-        print "\nSettling free phase done\n"
+        print "\nSettling free phase done in", steps, "settling iterations"
         print arrOutputUnits
 
         #Calculate weight change for free phase
@@ -49,12 +54,17 @@ for k in xrange(setting.batchIterations):
         arrOutputUnits = np.zeros(10) - 1
         arrOutputUnits[arrLabels[arrTrainImages[n]]] = 1
 
-        for i in xrange(setting.settlingIterations):
-            #update activation
-            arrHiddenUnits, maxDelta = lib.helpers.updateActivation(M1, M2, arrInputUnits, arrHiddenUnits, arrOutputUnits)
 
-        print "Maximal update for Unit:", maxDelta
-        print "settling clamped phase done"
+        #for i in xrange(setting.settlingIterations):
+        maxDeltaHid = 1
+        setps = 0
+        while maxDeltaHid > setting.delta:
+            #update activation
+            steps += 1
+            arrHiddenUnits, maxDeltaHid = lib.helpers.updateActivation(M1, M2, arrInputUnits, arrHiddenUnits, arrOutputUnits)
+
+        print "Maximal update for Unit:", maxDeltaHid
+        print "settling clamped phase done in :", steps, "settling iterations"
 
         print "\nUpdating the weights"
         #weight update after clamped phase
@@ -84,17 +94,21 @@ for n in xrange(setting.nTestImages): # test for 10 images
     else:
         arrInputUnits = test_set[0][arrTestImages[n]]
 
-    for i in xrange(setting.settlingIterationsTest):
+    #for i in xrange(setting.settlingIterationsTest):
+    maxDeltaHid = 1
+    maxDeltaOut = 1
+    setps = 0
+    while (maxDeltaHid > setting.delta) & (maxDeltaOut > setting.delta):
         # update forward activation
-        arrHiddenUnits, maxDelta = lib.helpers.updateActivation(M1, M2,  arrInputUnits, arrHiddenUnits, arrOutputUnits)
-        arrOutputUnits, maxDelta = lib.helpers.updateActivationLinear(M2, arrHiddenUnits, arrOutputUnits)
+        arrHiddenUnits, maxDeltaHid = lib.helpers.updateActivation(M1, M2,  arrInputUnits, arrHiddenUnits, arrOutputUnits)
+        arrOutputUnits, maxDeltaOut = lib.helpers.updateActivationLinear(M2, arrHiddenUnits, arrOutputUnits)
 
         if setting.debugEql:
             errorDiff = lib.helpers.calcErrorDiff(arrOutputUnits, arrLabels[arrTrainImages[n]])
         else:
             errorDiff = lib.helpers.calcErrorDiff(arrOutputUnits, test_set[1][arrTestImages[n]])
         print "Squared Error off target: ", errorDiff
-
+        steps += 1
     print "\nResponse to Image", n, arrOutputUnits
     if setting.debugEql == 1:
         if np.argmax(arrOutputUnits) == arrLabels[arrTestImages[n]]:

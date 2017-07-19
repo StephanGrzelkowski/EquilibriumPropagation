@@ -12,10 +12,10 @@ batchIterations = 100
 
 rest = 0 #activation value for initialization
 #decay = 0.0001
-lamb = 0.1  #
+lamb = 0.25  #
 aMax = 1 #maximal activity
 aMin = -1 #Minimal activity
 epsilon = 0.01 #weight update step size
-delta = 0.01
+delta = 0.0005
 
 varWeights = 0.25 #standard variance of the weight initialization
