@@ -23,7 +23,7 @@ def updateActivationLinear(M, hiddenUnits, outputUnits):
 
 
 def calcErrorDiff(arrOutputUnits, label):
-    target = np.zeros(len(arrOutputUnits)) #- 1
+    target = np.zeros(len(arrOutputUnits)) - 1
     target[label] = 1
     negTarget = np.ones(len(arrOutputUnits))
     negTarget[label] = 0
