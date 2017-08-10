@@ -1,9 +1,9 @@
 debugActivityUpdate = 0
 debugWeights = 0 #some debug prints to the console regarding the update rules of weight changes
-debugEql = 1
+debugEql = 0
 
 
-nTrainImages = 1000
+nTrainImages = 100
 nTestImages = 100
 nHiddenUnits = 200  #number of hidden Units per Hidden layer
 

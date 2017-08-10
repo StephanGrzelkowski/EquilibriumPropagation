@@ -55,7 +55,7 @@ for k in xrange(setting.batchIterations):
         arrOutputUnits[arrLabels[arrTrainImages[n]]] = 1
 
 
-        #for i in xrange(setting.settlingIterations):
+
         maxDeltaHid = 1
         steps = 0
         while maxDeltaHid > setting.delta:
@@ -95,7 +95,7 @@ for k in xrange(setting.batchIterations):
         # for i in xrange(setting.settlingIterationsTest):
         maxDeltaHid = 1
         maxDeltaOut = 1
-        setps = 0
+        steps = 0
         while (maxDeltaHid > setting.delta) & (maxDeltaOut > setting.delta):
             # update forward activation
             arrHiddenUnits, maxDeltaHid = lib.helpers.updateActivation(M1, M2, arrInputUnits, arrHiddenUnits,
